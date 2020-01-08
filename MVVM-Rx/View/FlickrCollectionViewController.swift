@@ -8,9 +8,13 @@
 
 import UIKit
 
-private let reuseIdentifier = "Cell"
-
 class FlickrCollectionViewController: UICollectionViewController {
+    
+    private let reuseIdentifier = "FlickrCell"
+//    private let sectionInsets = UIEdgeInsets(top: 50.0, left: 20.0, bottom: 50.0, right: 20.0)
+//    private var searches: [FlickrSearchResults] = []
+//    private let flickr = Flickr()
+    private let itemsPerRow: CGFloat = 3
     
     override func viewDidLoad() {
         super.viewDidLoad()
@@ -86,4 +90,36 @@ class FlickrCollectionViewController: UICollectionViewController {
     }
     */
     
+    
+    
+}
+
+// MARK: - Text Field Delegate
+extension FlickrCollectionViewController : UITextFieldDelegate {
+  func textFieldShouldReturn(_ textField: UITextField) -> Bool {
+    
+    let activityIndicator = UIActivityIndicatorView(style: .gray)
+    textField.addSubview(activityIndicator)
+    activityIndicator.frame = textField.bounds
+    activityIndicator.startAnimating()
+    
+    APIManager.searchFlickr(for: textField.text!) { searchResults in
+      activityIndicator.removeFromSuperview()
+      
+      switch searchResults {
+      case .error(let error) :
+        print("Error Searching: \(error)")
+      case .results(let results):
+        print("Found \(results.searchResults.count) matching \(results.searchTerm)")
+       // self.searches.insert(results, at: 0)
+        
+        
+        self.collectionView?.reloadData()
+      }
+    }
+    
+    textField.text = nil
+    textField.resignFirstResponder()
+    return true
+  }
 }
