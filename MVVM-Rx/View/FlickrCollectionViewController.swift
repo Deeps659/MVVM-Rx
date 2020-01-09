@@ -28,6 +28,22 @@ class FlickrCollectionViewController: UICollectionViewController {
         // Do any additional setup after loading the view.
     }
 
+    @IBAction func clickOption(_ sender: Any) {
+        let optionMenu = UIAlertController(title: nil, message: "Choose Option", preferredStyle: .actionSheet)
+            
+        let firstOption = UIAlertAction(title: "2", style: .default)
+        let secondOption = UIAlertAction(title: "3", style: .default)
+         
+        let thirdOption = UIAlertAction(title: "4", style: .default)
+            
+        
+        optionMenu.addAction(firstOption)
+        optionMenu.addAction(secondOption)
+        optionMenu.addAction(thirdOption)
+            
+        
+        self.present(optionMenu, animated: true, completion: nil)
+    }
     /*
     // MARK: - Navigation
 
