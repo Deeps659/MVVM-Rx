@@ -7,8 +7,9 @@
 //
 
 import Foundation
+import SwiftyJSON
 
-enum Result<ResultType> {
-  case results(ResultType)
+enum Result {
+  case results(JSON)
   case error(Error)
 }

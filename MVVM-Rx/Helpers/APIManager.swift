@@ -8,6 +8,7 @@
 
 import Foundation
 import UIKit
+import SwiftyJSON
 
 class APIManager {
     
@@ -20,7 +21,8 @@ class APIManager {
         case generic
       }
       
-      static func searchFlickr(for searchTerm: String, completion: @escaping (Result<FlickrSearchResults>) -> Void) {
+    static func searchFlickr(for searchTerm: String, completion: @escaping (Result) -> Void) {
+        
         guard let searchURL = flickrSearchURL(for: searchTerm) else {
           completion(Result.error(Error.unknownAPIResponse))
           return
@@ -28,96 +30,37 @@ class APIManager {
         
         let searchRequest = URLRequest(url: searchURL)
         
+        
         URLSession.shared.dataTask(with: searchRequest) { (data, response, error) in
-          if let error = error {
-            DispatchQueue.main.async {
-              completion(Result.error(error))
-            }
-            return
-          }
-          
-          guard
-            let _ = response as? HTTPURLResponse,
-            let data = data
-            else {
-              DispatchQueue.main.async {
-                completion(Result.error(Error.unknownAPIResponse))
-              }
-              return
-          }
-          
-          do {
-            guard
-              let resultsDictionary = try JSONSerialization.jsonObject(with: data) as? [String: AnyObject],
-              let stat = resultsDictionary["stat"] as? String
-              else {
-                DispatchQueue.main.async {
-                  completion(Result.error(Error.unknownAPIResponse))
+            if let error = error {
+                print(error)
+                completion(Result.error(error))
+            }else if let data = data ,let responseCode = response as? HTTPURLResponse {
+                do {
+                    let responseJson = try JSON(data: data)
+                    print("responseCode : \(responseCode.statusCode)")
+                    print("responseJSON : \(responseJson)")
+                    switch responseCode.statusCode {
+                    case 200:
+                        completion(Result.results(responseJson["photos"]))
+                    default:
+                        completion(Result.error(Error.generic))
+                        break
+                    }
                 }
-                return
-            }
-            
-            switch (stat) {
-            case "ok":
-              print("Results processed OK")
-            case "fail":
-              DispatchQueue.main.async {
-                completion(Result.error(Error.generic))
-              }
-              return
-            default:
-              DispatchQueue.main.async {
-                completion(Result.error(Error.unknownAPIResponse))
-              }
-              return
-            }
-            
-            guard
-              let photosContainer = resultsDictionary["photos"] as? [String: AnyObject],
-              let photosReceived = photosContainer["photo"] as? [[String: AnyObject]]
-              else {
-                DispatchQueue.main.async {
-                  completion(Result.error(Error.unknownAPIResponse))
+                catch let parseJSONError {
+                    completion(Result.error(Error.unknownAPIResponse))
+                    print("error on parsing request to JSON : \(parseJSONError)")
                 }
-                return
             }
-            
-            let flickrPhotos: [FlickrPhoto] = photosReceived.compactMap { photoObject in
-              guard
-                let photoID = photoObject["id"] as? String,
-                let farm = photoObject["farm"] as? Int ,
-                let server = photoObject["server"] as? String ,
-                let secret = photoObject["secret"] as? String
-                else {
-                  return nil
-              }
-              
-              let flickrPhoto = FlickrPhoto(photoID: photoID, farm: farm, server: server, secret: secret)
-              
-              guard
-                let url = flickrPhoto.flickrImageURL(),
-                let imageData = try? Data(contentsOf: url as URL)
-                else {
-                  return nil
-              }
-              
-              if let image = UIImage(data: imageData) {
-                flickrPhoto.thumbnail = image
-                return flickrPhoto
-              } else {
-                return nil
-              }
-            }
-            
-            let searchResults = FlickrSearchResults(searchTerm: searchTerm, searchResults: flickrPhotos)
-            DispatchQueue.main.async {
-              completion(Result.results(searchResults))
-            }
-          } catch {
-            completion(Result.error(error))
-            return
-          }
         }.resume()
+       
+        
+        
+            
+            
+            
+          
       }
       
       private static func flickrSearchURL(for searchTerm:String) -> URL? {
