@@ -14,6 +14,7 @@ class APIManager {
     
 
     static let apiKey = "f4f9421f6b6a93c817dc871ca09611f5"
+    public static let shared = APIManager()
 
    
       enum Error: Swift.Error {

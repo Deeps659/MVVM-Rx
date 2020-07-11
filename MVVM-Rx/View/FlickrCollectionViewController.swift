@@ -7,11 +7,15 @@
 //
 
 import UIKit
+import RxSwift
 
 class FlickrCollectionViewController: UICollectionViewController {
     
+    @IBOutlet var flickrCollectionView: UICollectionView!
     private let reuseIdentifier = "FlickrCell"
-    let vm = FlickrViewModel()
+    private let disposeBag = DisposeBag()
+    //let vm = FlickrViewModel()
+    var flickrViewModel: FlickrViewModel!
 //    private let sectionInsets = UIEdgeInsets(top: 50.0, left: 20.0, bottom: 50.0, right: 20.0)
 //    private var searches: [FlickrSearchResults] = []
 //    private let flickr = Flickr()
@@ -19,7 +23,37 @@ class FlickrCollectionViewController: UICollectionViewController {
     
     override func viewDidLoad() {
         super.viewDidLoad()
-        vm.requestData(for: "te")
+        //vm.requestData(for: "te")
+        setupNavigationBar()
+        let searchBar = self.navigationItem.searchController!.searchBar
+        
+        flickrViewModel = FlickrViewModel(query: searchBar.rx.text.orEmpty.asDriver(), apiManager: APIManager.shared)
+        
+        
+        flickrViewModel.flickrPhotos.drive(onNext: {[unowned self] (_) in
+                self.collectionView.reloadData()
+            }).disposed(by: disposeBag)
+            
+//            movieSearchViewViewModel.isFetching.drive(activityIndicatorView.rx.isAnimating)
+//                .disposed(by: disposeBag)
+//
+//            movieSearchViewViewModel.info.drive(onNext: {[unowned self] (info) in
+//                self.infoLabel.isHidden = !self.movieSearchViewViewModel.hasInfo
+//                self.infoLabel.text = info
+//            }).disposed(by: disposeBag)
+            
+            searchBar.rx.searchButtonClicked
+                .asDriver(onErrorJustReturn: ())
+                .drive(onNext: { [unowned searchBar] in
+                    searchBar.resignFirstResponder()
+                }).disposed(by: disposeBag)
+            
+            searchBar.rx.cancelButtonClicked
+                .asDriver(onErrorJustReturn: ())
+                .drive(onNext: { [unowned searchBar] in
+                    searchBar.resignFirstResponder()
+                }).disposed(by: disposeBag)
+
         // Uncomment the following line to preserve selection between presentations
         // self.clearsSelectionOnViewWillAppear = false
 
@@ -28,23 +62,50 @@ class FlickrCollectionViewController: UICollectionViewController {
 
         // Do any additional setup after loading the view.
     }
-
-    @IBAction func clickOption(_ sender: Any) {
-        let optionMenu = UIAlertController(title: nil, message: "Choose Option", preferredStyle: .actionSheet)
-            
-        let firstOption = UIAlertAction(title: "2", style: .default)
-        let secondOption = UIAlertAction(title: "3", style: .default)
-         
-        let thirdOption = UIAlertAction(title: "4", style: .default)
-            
+    
+    private func setupNavigationBar() {
+        navigationItem.searchController = UISearchController(searchResultsController: nil)
+        self.definesPresentationContext = true
+        navigationItem.searchController?.dimsBackgroundDuringPresentation = false
+        navigationItem.searchController?.hidesNavigationBarDuringPresentation = false
         
-        optionMenu.addAction(firstOption)
-        optionMenu.addAction(secondOption)
-        optionMenu.addAction(thirdOption)
-            
-        
-        self.present(optionMenu, animated: true, completion: nil)
+        navigationItem.searchController?.searchBar.sizeToFit()
+        navigationItem.hidesSearchBarWhenScrolling = false
+        navigationController?.navigationBar.prefersLargeTitles = true
     }
+    
+    private func setupBinding(){
+        
+        
+        flickrCollectionView.register(UINib(nibName: "FlickrCollectionViewCell", bundle: nil), forCellWithReuseIdentifier: reuseIdentifier)
+        
+        
+//        albums.bind(to: albumsCollectionView.rx.items(cellIdentifier: "AlbumsCollectionViewCell", cellType: AlbumsCollectionViewCell.self)) {  (row,album,cell) in
+//            cell.album = album
+//            cell.withBackView = true
+//            }.disposed(by: disposeBag)
+//        
+//        
+//        
+//        
+//        albumsCollectionView.rx.willDisplayCell
+//            .subscribe(onNext: ({ (cell,indexPath) in
+//                cell.alpha = 0
+//                let transform = CATransform3DTranslate(CATransform3DIdentity, 0, -250, 0)
+//                cell.layer.transform = transform
+//                UIView.animate(withDuration: 1, delay: 0, usingSpringWithDamping: 0.7, initialSpringVelocity: 0.5, options: .curveEaseOut, animations: {
+//                    cell.alpha = 1
+//                    cell.layer.transform = CATransform3DIdentity
+//                }, completion: nil)
+//            })).disposed(by: disposeBag)
+        
+        
+        
+        
+        
+    }
+
+  
     /*
     // MARK: - Navigation
 
